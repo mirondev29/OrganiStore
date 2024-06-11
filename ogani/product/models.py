@@ -3,15 +3,15 @@ from django.utils.text import slugify
 from django.urls import reverse
 
 class Category(models.Model):
-    name = models.CharField(max_length=250, db_index=True, blank=False, null=False)
-    parent = models.ForeignKey('Родитель' ,'self', on_delete=models.CASCADE, related_name='children', blank=True, null=True)
-    slug = models.SlugField('url' ,max_length=250, unique=True, null=False, editable=True)
+    name = models.CharField('категория', max_length=250, db_index=True, blank=False, null=False)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='children', blank=True, null=True)
+    slug = models.SlugField('url' ,max_length=250, unique=True, null=True, editable=True)
     created_at = models.DateTimeField('Дата создания' ,auto_now_add=True)
 
     class Meta:
         unique_together = ('slug', 'parent')
-        verbose_name = 'Категория'
-        verbose_name_plural = 'Категории'
+        verbose_name = 'категорию'
+        verbose_name_plural = 'категории'
 
     def __str__(self):
         full_path = [self.name]
@@ -32,12 +32,12 @@ class Category(models.Model):
         
 
 class Product(models.Model):
-    name = models.CharField(max_length=250, db_index=True, blank=False, null=False)
-    category = models.ForeignKey('Категория', Category, on_delete=models.CASCADE, related_name='Продукты', blank=False, null=False)
-    slug = models.SlugField('url' ,max_length=250, unique=True, null=False, editable=True)
+    name = models.CharField('Продукт', max_length=250, db_index=True, blank=False, null=False)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, blank=False, null=False)
+    slug = models.SlugField('url' ,max_length=250, unique=True, null=True, editable=True)
     description = models.TextField('Описание',blank=True, null=True)
     price = models.DecimalField('Цена', max_digits=7, decimal_places=2, blank=True, null=True)
-    image = models.ImageField('Изображение', upload_to='products', blank=True, null=True)
+    image = models.ImageField('Изображение', upload_to='products/%Y/%m/%d', blank=True, null=True)
     available = models.BooleanField('Наличие', default=True)
     created_at = models.DateTimeField('Дата создания' ,auto_now_add=True)
     updated_at = models.DateTimeField('Дата обновления' ,auto_now=True)
@@ -52,4 +52,9 @@ class Product(models.Model):
     
     def get_absolute_url(self):
         return reverse("model_detail", kwargs={"pk": self.pk})
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        return super().save(*args, **kwargs)
     
